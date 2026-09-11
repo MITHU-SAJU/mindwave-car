@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Live Spectator Leaderboard — Mindwave Slot Car Racing</title>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+  <div id="app">
+
+    <!-- ===================================================================
+         DEDICATED SPECTATOR / BIG SCREEN LEADERBOARD VIEW
+         =================================================================== -->
+    <main id="leaderboard-view" class="view active">
+      <header class="hud-topbar">
+        <div class="hud-title-block">
+          <span style="font-size:2.2rem;">🧠🏎️</span>
+          <div>
+            <div class="hud-title">LIVE LEADERBOARD</div>
+            <div style="font-size:0.75rem; color:var(--text-muted); letter-spacing:1px; display:flex; align-items:center; gap:0.4rem;">
+              <span class="status-dot"></span> LIVE SYNC SPECTATOR DISPLAY
+            </div>
+          </div>
+        </div>
+
+        <div class="hud-timer-display">
+          <span class="hud-timer-label">TOTAL RACE TIME</span>
+          <span id="lb-timer-value" class="hud-timer-value">00:00.00</span>
+        </div>
+
+        <div class="hud-controls-group" style="display:flex; align-items:center; gap:0.75rem;">
+          <div id="lb-target-laps" class="hud-target-laps-badge">8 LAPS</div>
+          <button id="btn-fullscreen-toggle" class="btn btn-outline" style="padding:0.4rem 0.8rem; font-size:0.85rem;">
+            🖥️ Fullscreen
+          </button>
+        </div>
+      </header>
+
+      <!-- Spectator Standings Grid -->
+      <section id="lb-grid" class="hud-grid">
+        <!-- Dynamically rendered standings cards -->
+      </section>
+
+      <!-- Last 10 Participants Leaderboard Table -->
+      <section class="history-leaderboard-section">
+        <div class="history-header">
+          <div class="history-title">
+            <span>🏆 RECENT PARTICIPANTS LEADERBOARD</span>
+            <span class="history-badge">LAST 10 DRIVERS</span>
+          </div>
+          <button id="btn-clear-history" class="btn btn-outline" style="padding:0.3rem 0.75rem; font-size:0.8rem; color:var(--text-muted);">
+            🗑️ Clear History
+          </button>
+        </div>
+
+        <div class="history-table-container">
+          <table class="history-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Driver Name</th>
+                <th>Best Lap</th>
+                <th>Laps Completed</th>
+                <th>Result</th>
+                <th>Time Logged</th>
+              </tr>
+            </thead>
+            <tbody id="lb-history-tbody">
+              <!-- Dynamically populated last 10 participants -->
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <footer class="hud-footer" style="justify-content:space-between;">
+        <div style="font-size:0.85rem; color:var(--text-muted); font-family:var(--font-mono);">
+          📡 Auto-Sync Active across screens via BroadcastChannel & LocalStorage
+        </div>
+        <button id="btn-switch-to-controller" class="btn btn-outline" style="font-size:0.85rem;">
+          ⚙️ Open Controller
+        </button>
+      </footer>
+    </main>
+
+    <!-- ===================================================================
+         WINNER CELEBRATION OVERLAY & MODALS
+         =================================================================== -->
+    <canvas id="confetti-canvas"></canvas>
+
+    <div id="winner-overlay">
+      <div class="winner-card">
+        <div class="winner-trophy">🏆</div>
+        <h1 id="winner-player-name" class="winner-banner-title">Player 1 Wins!</h1>
+        <p class="winner-subtext">Mindwave Slot Car Race Victory!</p>
+
+        <!-- Final Telemetry Matrix -->
+        <table class="results-matrix">
+          <thead>
+            <tr>
+              <th>Player</th>
+              <th>Laps</th>
+              <th>Best Lap</th>
+              <th>Avg Lap</th>
+              <th>Status / Duration</th>
+            </tr>
+          </thead>
+          <tbody id="winner-results-matrix">
+            <!-- Dynamically populated -->
+          </tbody>
+        </table>
+
+        <div style="display:flex; gap:1rem; margin-top:1rem; justify-content:center;">
+          <button id="btn-confirm-reset" class="btn btn-primary btn-lg">
+            🔄 Start New Race
+          </button>
+          <button id="btn-close-winner-modal" class="btn btn-outline btn-lg">
+            ✖ Close Overview
+          </button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Scripts -->
+  <script src="js/audio.js?v=9"></script>
+  <script src="js/confetti.js?v=9"></script>
+  <script src="js/state.js?v=9"></script>
+  <script src="js/app.js?v=9"></script>
+
+</body>
+</html>

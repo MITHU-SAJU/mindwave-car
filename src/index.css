@@ -1,0 +1,361 @@
+/* Mindwave Slot Car Racing — Modern Light Theme Design System */
+
+:root {
+  --bg-main: #f8fafc;
+  --bg-card: #ffffff;
+  --bg-card-hover: #f1f5f9;
+  --border-color: #e2e8f0;
+  --text-main: #0f172a;
+  --text-muted: #64748b;
+
+  /* Vibrant Accents */
+  --p1-color: #0284c7;
+  --p1-glow: rgba(2, 132, 199, 0.25);
+  --p1-bg: #f0f9ff;
+  --p1-border: #bae6fd;
+
+  --p2-color: #e11d48;
+  --p2-glow: rgba(225, 29, 72, 0.25);
+  --p2-bg: #fff1f2;
+  --p2-border: #fecdd3;
+
+  --accent-gold: #d97706;
+  --accent-green: #10b981;
+  --font-heading: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-mono: 'JetBrains Mono', 'Consolas', 'Courier New', monospace;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  background-color: var(--bg-main);
+  color: var(--text-main);
+  font-family: var(--font-heading);
+  min-height: 100vh;
+  background-image: 
+    radial-gradient(circle at 50% 0%, #e0e7ff 0%, transparent 65%),
+    radial-gradient(circle at 100% 100%, #ffe4e6 0%, transparent 55%),
+    linear-gradient(#cbd5e1 1px, transparent 1px),
+    linear-gradient(90deg, #cbd5e1 1px, transparent 1px);
+  background-size: 100% 100%, 100% 100%, 40px 40px, 40px 40px;
+}
+
+#root {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* React Bootstrap Overrides */
+.navbar-custom {
+  background: rgba(255, 255, 255, 0.95) !important;
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border-color);
+  padding: 0.8rem 1.5rem;
+  box-shadow: 0 4px 20px rgba(15, 23, 42, 0.04);
+}
+
+.brand-title-text {
+  font-size: 1.4rem;
+  font-weight: 800;
+  letter-spacing: 1px;
+  color: #0f172a;
+}
+
+/* Custom Light Cards */
+.cyber-card {
+  background: var(--bg-card) !important;
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--border-color) !important;
+  border-radius: 16px !important;
+  box-shadow: 0 8px 30px rgba(15, 23, 42, 0.05);
+  color: var(--text-main);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.cyber-card.p1-card {
+  border-left: 6px solid var(--p1-color) !important;
+  background: linear-gradient(180deg, #f0f9ff 0%, #ffffff 100%) !important;
+}
+
+.cyber-card.p1-card:hover {
+  box-shadow: 0 10px 30px var(--p1-glow);
+}
+
+.cyber-card.p2-card {
+  border-left: 6px solid var(--p2-color) !important;
+  background: linear-gradient(180deg, #fff1f2 0%, #ffffff 100%) !important;
+}
+
+.cyber-card.p2-card:hover {
+  box-shadow: 0 10px 30px var(--p2-glow);
+}
+
+/* Touch Targets (+1 LAP Button) - Compact & Adaptive to Hand */
+.btn-lap-touch {
+  padding: 0.5rem 1.6rem !important;
+  font-size: 1.15rem !important;
+  font-weight: 800 !important;
+  letter-spacing: 1px !important;
+  border-radius: 50px !important;
+  text-transform: uppercase;
+  font-family: var(--font-heading) !important;
+  transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  max-width: 170px;
+  width: 100%;
+  margin: 0 auto 0.5rem auto;
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+}
+
+.btn-lap-touch:hover {
+  transform: translateY(-2px) scale(1.02);
+}
+
+.p1-lap-btn {
+  background: linear-gradient(135deg, #0284c7, #0369a1) !important;
+  border: none !important;
+  color: #ffffff !important;
+  box-shadow: 0 5px 18px var(--p1-glow) !important;
+}
+.p1-lap-btn:active {
+  transform: scale(0.94) !important;
+  box-shadow: 0 0 20px var(--p1-color) !important;
+}
+
+.p2-lap-btn {
+  background: linear-gradient(135deg, #e11d48, #be123c) !important;
+  border: none !important;
+  color: #ffffff !important;
+  box-shadow: 0 5px 18px var(--p2-glow) !important;
+}
+.p2-lap-btn:active {
+  transform: scale(0.94) !important;
+  box-shadow: 0 0 20px var(--p2-color) !important;
+}
+
+/* Both Players Simultaneous Lap Button */
+.btn-both-laps {
+  background: linear-gradient(135deg, #6366f1, #a855f7, #0284c7) !important;
+  background-size: 200% 200% !important;
+  animation: gradientShift 4s ease infinite;
+  border: none !important;
+  color: #ffffff !important;
+  font-weight: 800 !important;
+  font-family: var(--font-heading) !important;
+  letter-spacing: 1px;
+  border-radius: 14px !important;
+  box-shadow: 0 8px 25px rgba(99, 102, 241, 0.35) !important;
+  transition: transform 0.15s ease, box-shadow 0.15s ease !important;
+}
+
+@keyframes gradientShift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.btn-both-laps:hover {
+  transform: translateY(-2px) scale(1.01);
+  box-shadow: 0 10px 35px rgba(99, 102, 241, 0.45) !important;
+}
+
+.btn-both-laps:active {
+  transform: scale(0.97) !important;
+  box-shadow: 0 0 30px rgba(99, 102, 241, 0.6) !important;
+}
+
+/* VS Matchup Center Badge & Launch Button */
+.vs-badge-container {
+  position: relative;
+  z-index: 10;
+}
+
+.vs-glow-circle {
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #e11d48, #6366f1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 8px 30px rgba(99, 102, 241, 0.4);
+  animation: pulseVs 2s infinite ease-in-out;
+  border: 3px solid #ffffff;
+}
+
+.vs-text {
+  font-size: 2.2rem;
+  font-weight: 900;
+  font-style: italic;
+  color: #ffffff;
+  font-family: var(--font-heading);
+  letter-spacing: 2px;
+}
+
+@keyframes pulseVs {
+  0% { transform: scale(1); box-shadow: 0 8px 25px rgba(99, 102, 241, 0.4); }
+  50% { transform: scale(1.08); box-shadow: 0 12px 35px rgba(99, 102, 241, 0.6); }
+  100% { transform: scale(1); box-shadow: 0 8px 25px rgba(99, 102, 241, 0.4); }
+}
+
+.btn-launch-race {
+  background: linear-gradient(135deg, #10b981, #0284c7) !important;
+  border: none !important;
+  color: #ffffff !important;
+  font-family: var(--font-heading) !important;
+  box-shadow: 0 8px 25px rgba(16, 185, 129, 0.35) !important;
+  transition: transform 0.2s ease, box-shadow 0.2s ease !important;
+}
+
+.btn-launch-race:hover {
+  transform: scale(1.02) translateY(-2px) !important;
+  box-shadow: 0 12px 35px rgba(16, 185, 129, 0.5) !important;
+}
+
+/* Form Controls */
+.form-control-cyber {
+  background-color: #ffffff !important;
+  border: 1.5px solid #cbd5e1 !important;
+  color: #0f172a !important;
+  border-radius: 10px !important;
+  padding: 0.75rem 1rem !important;
+  font-size: 1.05rem !important;
+  font-family: var(--font-heading) !important;
+  font-weight: 600 !important;
+}
+.form-control-cyber:focus {
+  border-color: var(--p1-color) !important;
+  box-shadow: 0 0 0 4px var(--p1-glow) !important;
+}
+
+/* Badges & Hotkey Hints */
+.shortcut-badge {
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 0.4rem 0.7rem;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  font-family: var(--font-heading);
+}
+.shortcut-badge span, kbd {
+  background: #e0f2fe;
+  color: #0284c7;
+  padding: 0.15rem 0.45rem;
+  border-radius: 5px;
+  font-family: var(--font-mono);
+  font-weight: bold;
+  border: 1px solid #bae6fd;
+}
+
+/* Table Light Theme Overrides */
+.table-cyber {
+  --bs-table-bg: transparent;
+  --bs-table-color: var(--text-main);
+  border-color: #e2e8f0;
+}
+.table-cyber th {
+  background: #f8fafc;
+  color: #475569;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-family: var(--font-heading);
+  font-weight: 700;
+}
+.table-cyber td {
+  vertical-align: middle;
+}
+
+/* Modal Light Overrides */
+.modal-content-cyber {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  color: var(--text-main) !important;
+  border-radius: 20px !important;
+  box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.25) !important;
+}
+
+/* Live Timer Display */
+.hud-timer {
+  font-family: var(--font-mono);
+  font-size: 2.2rem;
+  font-weight: 800;
+  color: #0284c7;
+  letter-spacing: 2px;
+}
+
+/* Confetti Overlay */
+#confetti-canvas {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+  z-index: 9999;
+}
+
+/* Responsive Media Queries for Small Screens & Mobile Devices */
+@media (max-width: 768px) {
+  .navbar-custom {
+    padding: 0.5rem 0.75rem !important;
+  }
+  .brand-title-text {
+    font-size: 1.1rem !important;
+  }
+  .cyber-card {
+    padding: 0.85rem !important;
+    border-radius: 12px !important;
+  }
+  .hud-timer {
+    font-size: 1.5rem !important;
+  }
+  .btn-lap-touch {
+    padding: 0.4rem 1.2rem !important;
+    font-size: 1rem !important;
+    max-width: 150px !important;
+  }
+  .btn-both-laps {
+    font-size: 1.1rem !important;
+    padding: 0.5rem 1rem !important;
+  }
+  .vs-glow-circle {
+    width: 65px !important;
+    height: 65px !important;
+  }
+  .vs-text {
+    font-size: 1.5rem !important;
+  }
+  .display-1 { font-size: 2.8rem !important; }
+  .display-2 { font-size: 2.4rem !important; }
+  .display-3 { font-size: 2.1rem !important; }
+  .display-4 { font-size: 1.8rem !important; }
+  .display-5 { font-size: 1.5rem !important; }
+  .display-6 { font-size: 1.3rem !important; }
+}
+
+@media (max-width: 480px) {
+  .brand-title-text {
+    font-size: 0.95rem !important;
+  }
+  .hud-timer {
+    font-size: 1.2rem !important;
+  }
+  .btn-lap-touch {
+    padding: 0.35rem 1rem !important;
+    font-size: 0.9rem !important;
+    max-width: 130px !important;
+  }
+  .btn-both-laps {
+    font-size: 0.95rem !important;
+    padding: 0.4rem 0.75rem !important;
+  }
+  .table-cyber th, .table-cyber td {
+    padding: 0.4rem 0.5rem !important;
+    font-size: 0.85rem !important;
+  }
+}

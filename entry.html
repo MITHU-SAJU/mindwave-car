@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Player Entry — Mindwave Slot Car Racing</title>
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    if (!params.has('view')) params.set('view', 'entry');
+    if (!params.has('player')) params.set('player', '1');
+    window.location.replace('index.html?' + params.toString());
+  </script>
+</head>
+<body>
+</body>
+</html>

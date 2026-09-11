@@ -1,0 +1,34 @@
+{
+  "name": "mindwave-car-race-leaderboard",
+  "version": "2.0.0",
+  "description": "Mindwave Slot Car Racing Leaderboard & Disk File Storage Server (React Bootstrap)",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "server": "node server.js"
+  },
+  "dependencies": {
+    "bootstrap": "^5.3.3",
+    "canvas-confetti": "^1.9.4",
+    "react": "^18.3.1",
+    "react-bootstrap": "^2.10.4",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.3",
+    "@types/react-dom": "^18.3.0",
+    "@vitejs/plugin-react": "^4.3.1",
+    "vite": "^5.4.1"
+  },
+  "keywords": [
+    "mindwave",
+    "slot-car",
+    "leaderboard",
+    "react-bootstrap"
+  ],
+  "author": "",
+  "license": "ISC"
+}

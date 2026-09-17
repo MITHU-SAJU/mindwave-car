@@ -25,14 +25,11 @@ export function HeaderNavbar({
           >
             <span style={{ fontSize: '1.5rem' }}>🧠🏎️</span>
             <div>
-              <div className="brand-title-text d-flex align-items-center gap-2">
-                <span>MINDWAVE RACING</span>
-                <Badge bg={locationId === 'location_1' ? 'primary' : locationId === 'location_2' ? 'danger' : 'info'} className="fs-6 py-1 px-2">
-                  📍 {locationId === 'location_1' ? 'Location 1' : locationId === 'location_2' ? 'Location 2' : locationId}
-                </Badge>
+              <div className="brand-title-text fw-bold">
+                MINDWAVE RACING
               </div>
               <div className="d-none d-md-block" style={{ fontSize: '0.65rem', color: 'var(--text-muted)', letterSpacing: '1px' }}>
-                MULTI-LOCATION SUPABASE LEADERBOARD SYSTEM
+                LEADERBOARD SYSTEM
               </div>
             </div>
           </Navbar.Brand>

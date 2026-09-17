@@ -153,6 +153,57 @@ export async function clearRaceRecordsInSupabase(locationId = 'all') {
 }
 
 /**
+ * Update a specific race entry in Supabase by entry_id
+ */
+export async function updateRaceRecordInSupabase(entryId, updatedData) {
+  const client = getSupabaseClient();
+  if (!client) return null;
+
+  try {
+    const { data, error } = await client
+      .from('race_history')
+      .update(updatedData)
+      .eq('entry_id', entryId)
+      .select();
+
+    if (error) {
+      console.warn('[Supabase Update Warning]', error.message);
+      return null;
+    }
+
+    return data;
+  } catch (err) {
+    console.error('[Supabase Update Error]', err);
+    return null;
+  }
+}
+
+/**
+ * Delete a single race record from Supabase by entry_id
+ */
+export async function deleteSingleRecordFromSupabase(entryId) {
+  const client = getSupabaseClient();
+  if (!client) return false;
+
+  try {
+    const { error } = await client
+      .from('race_history')
+      .delete()
+      .eq('entry_id', entryId);
+
+    if (error) {
+      console.warn('[Supabase Delete Record Warning]', error.message);
+      return false;
+    }
+
+    return true;
+  } catch (err) {
+    console.error('[Supabase Delete Record Error]', err);
+    return false;
+  }
+}
+
+/**
  * Subscribe to Supabase realtime changes
  */
 export function subscribeToSupabaseRealtime(callback) {
@@ -170,3 +221,4 @@ export function subscribeToSupabaseRealtime(callback) {
     client.removeChannel(channel);
   };
 }
+

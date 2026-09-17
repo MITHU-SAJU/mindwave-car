@@ -1,15 +1,21 @@
 import React, { useState, useEffect } from 'react';
-import { Container, Card, Table, Badge, Button, ButtonGroup } from 'react-bootstrap';
+import { Container, Card, Table, Badge, Button, Modal, Form } from 'react-bootstrap';
 import { raceStateManager } from '../services/stateManager';
-import { fetchRaceHistory, clearRaceHistoryOnDisk } from '../services/api';
+import { fetchRaceHistory, clearRaceHistoryOnDisk, updateParticipantRecord, deleteParticipantRecord } from '../services/api';
 import { subscribeToSupabaseRealtime } from '../services/supabase';
 
 export function PublicLeaderboardView({ raceState, formattedTime, onSwitchToControl }) {
-  const [filterLocation, setFilterLocation] = useState('all');
+  const [filterLocation] = useState('all');
   const [leaderboard, setLeaderboard] = useState([]);
 
+  // Edit Modal State
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingEntry, setEditingEntry] = useState(null);
+  const [editName, setEditName] = useState('');
+  const [editLaps, setEditLaps] = useState(0);
+
   const loadLeaderboardData = async (loc = filterLocation) => {
-    // 1. Fetch from API / Supabase / localStorage
+    // Fetch directly from Supabase Database
     const list = await fetchRaceHistory(loc);
 
     // Sort: Laps (desc), Total time (asc), Fastest lap (asc)
@@ -49,15 +55,43 @@ export function PublicLeaderboardView({ raceState, formattedTime, onSwitchToCont
     };
   }, [raceState, filterLocation]);
 
-  const handleLocationTabChange = (loc) => {
-    setFilterLocation(loc);
-    loadLeaderboardData(loc);
+  const handleClearHistory = async () => {
+    if (window.confirm('Are you sure you want to clear all leaderboard records from Supabase?')) {
+      await clearRaceHistoryOnDisk(filterLocation);
+      loadLeaderboardData(filterLocation);
+    }
   };
 
-  const handleClearHistory = async () => {
-    const targetText = filterLocation === 'all' ? 'ALL locations' : filterLocation === 'location_1' ? 'Location 1' : 'Location 2';
-    if (window.confirm(`Are you sure you want to clear leaderboard records for ${targetText}?`)) {
-      await clearRaceHistoryOnDisk(filterLocation);
+  // Handle Opening Edit Modal
+  const handleOpenEdit = (row) => {
+    setEditingEntry(row);
+    setEditName(row.player_name || row.name || '');
+    setEditLaps(parseInt(row.laps, 10) || 0);
+    setShowEditModal(true);
+  };
+
+  // Save Edit to Supabase
+  const handleSaveEdit = async () => {
+    if (!editingEntry) return;
+
+    const entryId = editingEntry.entry_id;
+    if (entryId) {
+      await updateParticipantRecord(entryId, {
+        player_name: editName.trim(),
+        laps: parseInt(editLaps, 10) || 0
+      });
+      loadLeaderboardData(filterLocation);
+    }
+    setShowEditModal(false);
+  };
+
+  // Handle Deleting a Single Row from Supabase
+  const handleDeleteRow = async (row) => {
+    const entryId = row.entry_id;
+    const name = row.player_name || row.name || 'Driver';
+
+    if (window.confirm(`Are you sure you want to delete ${name} from the leaderboard database?`)) {
+      await deleteParticipantRecord(entryId);
       loadLeaderboardData(filterLocation);
     }
   };
@@ -66,124 +100,104 @@ export function PublicLeaderboardView({ raceState, formattedTime, onSwitchToCont
   const isFinished = raceState.status === 'finished';
 
   return (
-    <Container fluid className="p-2 p-md-3 flex-grow-1 d-flex flex-column" style={{ maxHeight: 'calc(100vh - 65px)', overflow: 'hidden' }}>
-      {/* TV Header Banner */}
-      <Card className="cyber-card p-2 px-3 mb-2 d-flex flex-row justify-content-between align-items-center">
-        <div className="d-flex align-items-center gap-2">
-          <span style={{ fontSize: '1.8rem' }}>🏆</span>
+    <Container fluid className="p-3 p-md-4 flex-grow-1 d-flex flex-column" style={{ maxHeight: 'calc(100vh - 65px)', overflow: 'hidden' }}>
+      {/* Header Banner */}
+      <Card className="cyber-card p-3 mb-3 d-flex flex-row justify-content-between align-items-center shadow-sm">
+        <div className="d-flex align-items-center gap-3">
+          <span style={{ fontSize: '2rem' }}>🏆</span>
           <div>
-            <h4 className="fw-bold text-dark mb-0 tracking-wide fs-5">
-              RACE LEADERBOARD & STANDINGS
+            <h4 className="fw-bold text-dark mb-0 tracking-wide fs-4">
+              RACE LEADERBOARD
             </h4>
-            <div className="text-muted small fw-bold" style={{ fontSize: '0.7rem' }}>
-              REALTIME MULTI-LOCATION TRACKER
-            </div>
           </div>
         </div>
 
         <div className="d-flex align-items-center gap-2">
-          <Badge bg={isRacing ? 'success' : isFinished ? 'warning' : 'secondary'} className="fs-6 px-2 py-1">
+          <Badge bg={isRacing ? 'success' : isFinished ? 'warning' : 'secondary'} className="fs-6 px-3 py-2">
             {isRacing ? 'LIVE RACING' : isFinished ? 'RACE FINISHED' : 'READY'}
           </Badge>
 
           {onSwitchToControl && (
-            <Button variant="outline-primary" size="sm" className="fw-bold px-2 py-1" onClick={onSwitchToControl}>
+            <Button variant="outline-primary" size="sm" className="fw-bold px-3 py-2" onClick={onSwitchToControl}>
               ⚙️ Controller
             </Button>
           )}
         </div>
       </Card>
 
-      {/* Location Selector Tabs */}
-      <div className="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
-        <ButtonGroup size="sm" className="cyber-button-group shadow-sm">
-          <Button
-            variant={filterLocation === 'all' ? 'warning' : 'outline-dark'}
-            className="fw-bold px-3 py-1"
-            onClick={() => handleLocationTabChange('all')}
-          >
-            🌍 Global (All Locations)
-          </Button>
-          <Button
-            variant={filterLocation === 'location_1' ? 'primary' : 'outline-dark'}
-            className="fw-bold px-3 py-1"
-            onClick={() => handleLocationTabChange('location_1')}
-          >
-            🏢 Location 1
-          </Button>
-          <Button
-            variant={filterLocation === 'location_2' ? 'danger' : 'outline-dark'}
-            className="fw-bold px-3 py-1"
-            onClick={() => handleLocationTabChange('location_2')}
-          >
-            🏬 Location 2
-          </Button>
-        </ButtonGroup>
-
-        <Button variant="outline-danger" size="sm" className="py-1 px-2" onClick={handleClearHistory}>
-          🗑️ Clear ({filterLocation === 'all' ? 'All' : filterLocation === 'location_1' ? 'Loc 1' : 'Loc 2'})
-        </Button>
-      </div>
-
       {/* Winner Banner if Finished */}
       {isFinished && raceState.winner_summary && (
-        <Card className="cyber-card p-2 px-3 mb-2 border-warning text-center shadow-sm" style={{ background: '#fef3c7', border: '2px solid #f59e0b' }}>
+        <Card className="cyber-card p-3 mb-3 border-warning text-center shadow-sm" style={{ background: '#fef3c7', border: '2px solid #f59e0b' }}>
           <h4 className="fw-bold text-dark fs-5 mb-0">
             🏆 LATEST WINNER: {raceState.winner_summary.winner_name}! | Laps: <strong>{raceState.winner_summary.winner_laps}</strong> | Total Time: <strong>{raceState.winner_summary.total_time_str}</strong> | Best Lap: <strong>{raceState.winner_summary.winner_best_lap ? `${raceState.winner_summary.winner_best_lap.toFixed(2)}s` : '--'}</strong>
           </h4>
         </Card>
       )}
 
-      {/* Clean Session Leaderboard Table */}
-      <Card className="cyber-card p-3 flex-grow-1 d-flex flex-column overflow-hidden shadow-sm">
-        <div className="d-flex justify-content-between align-items-center mb-2">
-          <h5 className="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
-            <span>🥇</span> DRIVER STANDINGS {filterLocation === 'all' ? '(GLOBAL)' : filterLocation === 'location_1' ? '(LOCATION 1)' : '(LOCATION 2)'}
+      {/* Clean & Spacious Standings Table */}
+      <Card className="cyber-card p-3 p-md-4 flex-grow-1 d-flex flex-column overflow-hidden shadow-sm">
+        <div className="d-flex justify-content-between align-items-center mb-3">
+          <h5 className="fw-bold text-dark mb-0 d-flex align-items-center gap-2 fs-5">
+            <span>🥇</span> DRIVER RANKINGS
           </h5>
+          <Button variant="outline-danger" size="sm" className="py-1 px-3 fw-bold" onClick={handleClearHistory}>
+            🗑️ Clear All
+          </Button>
         </div>
 
         <div className="table-responsive flex-grow-1 overflow-auto">
           <Table className="table-cyber align-middle text-nowrap mb-0">
             <thead>
               <tr>
-                <th className="py-2">Rank</th>
-                <th className="py-2">Location</th>
-                <th className="py-2">Driver Name</th>
-                <th className="py-2">Completed Laps</th>
-                <th className="py-2">Total Race Time</th>
-                <th className="py-2">Fastest Lap</th>
+                <th className="py-3 px-4 fs-6">Rank</th>
+                <th className="py-3 px-4 fs-6">Driver Name</th>
+                <th className="py-3 px-4 fs-6">Completed Laps</th>
+                <th className="py-3 px-4 fs-6">Total Race Time</th>
+                <th className="py-3 px-4 fs-6">Fastest Lap</th>
+                <th className="py-3 px-4 fs-6 text-center">Actions</th>
               </tr>
             </thead>
             <tbody>
               {leaderboard && leaderboard.length > 0 ? (
-                leaderboard.map((row, idx) => {
-                  const locId = row.location_id || 'location_1';
-                  const locBadgeBg = locId === 'location_1' ? 'primary' : locId === 'location_2' ? 'danger' : 'info';
-                  const locLabel = locId === 'location_1' ? 'Location 1' : locId === 'location_2' ? 'Location 2' : locId;
-
-                  return (
-                    <tr key={row.entry_id || idx} style={{ background: row.is_winner ? '#fffbeb' : 'transparent' }}>
-                      <td className="fw-bold text-warning py-2">
-                        {idx === 0 ? '🥇 #1' : idx === 1 ? '🥈 #2' : idx === 2 ? '🥉 #3' : `#${idx + 1}`}
-                      </td>
-                      <td className="py-2">
-                        <Badge bg={locBadgeBg} className="fw-bold px-2 py-1">
-                          📍 {locLabel}
-                        </Badge>
-                      </td>
-                      <td className="fw-bold text-dark py-2">
-                        {row.player_name || row.name} {row.is_winner && '🏆'}
-                      </td>
-                      <td className="fw-bold text-primary py-2">{row.laps} Laps</td>
-                      <td className="text-dark fw-bold py-2" style={{ fontFamily: 'var(--font-mono)' }}>{row.total_time_str || row.time_str}</td>
-                      <td className="text-warning fw-bold py-2" style={{ fontFamily: 'var(--font-mono)' }}>{row.fastest_lap_str || row.best_lap}</td>
-                    </tr>
-                  );
-                })
+                leaderboard.map((row, idx) => (
+                  <tr key={row.entry_id || idx} style={{ background: row.is_winner ? '#fffbeb' : 'transparent' }}>
+                    <td className="fw-bold text-warning py-3 px-4 fs-5">
+                      {idx === 0 ? '🥇 #1' : idx === 1 ? '🥈 #2' : idx === 2 ? '🥉 #3' : `#${idx + 1}`}
+                    </td>
+                    <td className="fw-bold text-dark py-3 px-4 fs-5">
+                      {row.player_name || row.name} {row.is_winner && '🏆'}
+                    </td>
+                    <td className="fw-bold text-primary py-3 px-4 fs-5">{row.laps} Laps</td>
+                    <td className="text-dark fw-bold py-3 px-4 fs-5" style={{ fontFamily: 'var(--font-mono)' }}>{row.total_time_str || row.time_str}</td>
+                    <td className="text-warning fw-bold py-3 px-4 fs-5" style={{ fontFamily: 'var(--font-mono)' }}>{row.fastest_lap_str || row.best_lap}</td>
+                    <td className="py-3 px-4 text-center">
+                      <div className="d-flex justify-content-center gap-2">
+                        <Button
+                          variant="outline-info"
+                          size="sm"
+                          className="px-2 py-1"
+                          onClick={() => handleOpenEdit(row)}
+                          title="Edit Record"
+                        >
+                          ✏️ Edit
+                        </Button>
+                        <Button
+                          variant="outline-danger"
+                          size="sm"
+                          className="px-2 py-1"
+                          onClick={() => handleDeleteRow(row)}
+                          title="Delete Record"
+                        >
+                          🗑️ Delete
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
               ) : (
                 <tr>
-                  <td colSpan="6" className="text-center py-4 text-muted fw-bold">
-                    No completed races found for {filterLocation === 'all' ? 'any location' : filterLocation === 'location_1' ? 'Location 1' : 'Location 2'}. Start a race in Race Controller!
+                  <td colSpan="6" className="text-center py-5 text-muted fw-bold fs-5">
+                    No completed races in Supabase database yet. Start a race in Race Controller!
                   </td>
                 </tr>
               )}
@@ -191,7 +205,46 @@ export function PublicLeaderboardView({ raceState, formattedTime, onSwitchToCont
           </Table>
         </div>
       </Card>
+
+      {/* Edit Driver Record Modal */}
+      <Modal show={showEditModal} onHide={() => setShowEditModal(false)} centered contentClassName="modal-content-cyber">
+        <Modal.Header closeButton closeVariant="white">
+          <Modal.Title className="fw-bold text-white">✏️ Edit Driver Record</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <Form.Group className="mb-3">
+            <Form.Label className="text-info fw-bold">Driver Name</Form.Label>
+            <Form.Control
+              type="text"
+              className="form-control-cyber"
+              value={editName}
+              onChange={(e) => setEditName(e.target.value)}
+            />
+          </Form.Group>
+
+          <Form.Group className="mb-3">
+            <Form.Label className="text-warning fw-bold">Completed Laps</Form.Label>
+            <Form.Control
+              type="number"
+              min="0"
+              className="form-control-cyber"
+              value={editLaps}
+              onChange={(e) => setEditLaps(e.target.value)}
+            />
+          </Form.Group>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="outline-secondary" onClick={() => setShowEditModal(false)}>
+            Cancel
+          </Button>
+          <Button variant="info" onClick={handleSaveEdit} className="fw-bold">
+            Save Changes
+          </Button>
+        </Modal.Footer>
+      </Modal>
     </Container>
   );
 }
+
+
 

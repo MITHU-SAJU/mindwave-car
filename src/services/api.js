@@ -1,11 +1,15 @@
 /**
- * Hybrid Service for Race Leaderboard Storage (Supabase + LocalStorage Fallback)
+ * Cloud Database Service for Race Leaderboard Storage (Supabase Direct Integration)
  */
 
-import { saveRaceRecordToSupabase, fetchRaceRecordsFromSupabase, clearRaceRecordsInSupabase, isSupabaseConfigured } from './supabase';
-
-const LEADERBOARD_KEY = 'mindwave_racing_leaderboard';
-const HISTORY_KEY = 'mindwave_race_history';
+import {
+  saveRaceRecordToSupabase,
+  fetchRaceRecordsFromSupabase,
+  clearRaceRecordsInSupabase,
+  updateRaceRecordInSupabase,
+  deleteSingleRecordFromSupabase,
+  isSupabaseConfigured
+} from './supabase';
 
 export async function saveParticipantToDisk(recordObj) {
   try {
@@ -14,64 +18,55 @@ export async function saveParticipantToDisk(recordObj) {
     const locationId = recordObj.location_id || localStorage.getItem('mindwave_location_id') || 'location_1';
     const entryObj = { ...recordObj, location_id: locationId };
 
-    // 1. Save to LocalStorage immediately
-    const stored = localStorage.getItem(LEADERBOARD_KEY) || localStorage.getItem(HISTORY_KEY);
-    let history = stored ? JSON.parse(stored) : [];
-
-    const entryId = entryObj.entry_id || `${entryObj.race_id}_${entryObj.id || entryObj.playerId || '1'}`;
-    const existingIdx = history.findIndex(h => h && (h.entry_id === entryId || (h.race_id === entryObj.race_id && String(h.id) === String(entryObj.id))));
-
-    if (existingIdx >= 0) {
-      history[existingIdx] = { ...history[existingIdx], ...entryObj };
-    } else {
-      history.unshift(entryObj);
-    }
-
-    if (history.length > 200) history = history.slice(0, 200);
-
-    localStorage.setItem(LEADERBOARD_KEY, JSON.stringify(history));
-    localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
-
-    // 2. Save to Supabase Cloud Database if configured
     if (isSupabaseConfigured()) {
-      saveRaceRecordToSupabase(entryObj).catch(err => {
-        console.warn('[Supabase Sync Deferred]', err);
-      });
+      await saveRaceRecordToSupabase(entryObj);
     }
 
-    return { success: true, count: history.length };
+    return { success: true };
   } catch (err) {
-    console.error('Error saving participant to storage:', err);
+    console.error('Error saving participant to cloud database:', err);
     return null;
   }
 }
 
 export async function fetchRaceHistory(locationId = 'all') {
   try {
-    // Attempt fetching from Supabase first if configured
     if (isSupabaseConfigured()) {
       const supabaseData = await fetchRaceRecordsFromSupabase(locationId);
       if (supabaseData && Array.isArray(supabaseData)) {
-        // Cache in localStorage for offline availability
-        if (locationId === 'all') {
-          localStorage.setItem(LEADERBOARD_KEY, JSON.stringify(supabaseData));
-        }
         return supabaseData;
       }
     }
-
-    // LocalStorage fallback
-    const stored = localStorage.getItem(LEADERBOARD_KEY) || localStorage.getItem(HISTORY_KEY);
-    let history = stored ? JSON.parse(stored) : [];
-
-    if (locationId && locationId !== 'all') {
-      history = history.filter(item => (item.location_id || 'location_1') === locationId);
-    }
-
-    return history;
-  } catch (err) {
-    console.error('Error reading race history:', err);
     return [];
+  } catch (err) {
+    console.error('Error reading race history from Supabase:', err);
+    return [];
+  }
+}
+
+export async function updateParticipantRecord(entryId, updatedFields) {
+  try {
+    if (isSupabaseConfigured()) {
+      const updated = await updateRaceRecordInSupabase(entryId, updatedFields);
+      return { success: !!updated };
+    }
+    return { success: false };
+  } catch (err) {
+    console.error('Error updating participant record:', err);
+    return { success: false };
+  }
+}
+
+export async function deleteParticipantRecord(entryId) {
+  try {
+    if (isSupabaseConfigured()) {
+      const deleted = await deleteSingleRecordFromSupabase(entryId);
+      return { success: deleted };
+    }
+    return { success: false };
+  } catch (err) {
+    console.error('Error deleting participant record:', err);
+    return { success: false };
   }
 }
 
@@ -80,22 +75,11 @@ export async function clearRaceHistoryOnDisk(locationId = 'all') {
     if (isSupabaseConfigured()) {
       await clearRaceRecordsInSupabase(locationId);
     }
-
-    if (locationId === 'all') {
-      localStorage.removeItem(LEADERBOARD_KEY);
-      localStorage.removeItem(HISTORY_KEY);
-    } else {
-      const stored = localStorage.getItem(LEADERBOARD_KEY);
-      if (stored) {
-        const history = JSON.parse(stored).filter(item => (item.location_id || 'location_1') !== locationId);
-        localStorage.setItem(LEADERBOARD_KEY, JSON.stringify(history));
-      }
-    }
-
     return { success: true };
   } catch (err) {
     console.error('Error clearing race history:', err);
     return null;
   }
 }
+
 

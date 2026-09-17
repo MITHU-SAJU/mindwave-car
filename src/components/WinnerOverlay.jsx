@@ -1,13 +1,17 @@
-import React, { useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Modal, Row, Col, Card, Table, Button, Badge } from 'react-bootstrap';
 import confetti from 'canvas-confetti';
 import { soundEngine } from '../services/audio';
 
 export function WinnerOverlay({ raceState, show, onNewRace, onOpenLeaderboard }) {
   const summary = raceState.winner_summary;
+  const [countdown, setCountdown] = useState(5);
 
   useEffect(() => {
+    let timerId = null;
+
     if (show && summary) {
+      setCountdown(5);
       soundEngine.playVictoryFanfare();
       try {
         confetti({
@@ -16,7 +20,22 @@ export function WinnerOverlay({ raceState, show, onNewRace, onOpenLeaderboard })
           origin: { y: 0.5 }
         });
       } catch (e) {}
+
+      timerId = setInterval(() => {
+        setCountdown((prev) => {
+          if (prev <= 1) {
+            clearInterval(timerId);
+            onNewRace();
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
     }
+
+    return () => {
+      if (timerId) clearInterval(timerId);
+    };
   }, [show, summary]);
 
   if (!summary) return null;
@@ -35,7 +54,14 @@ export function WinnerOverlay({ raceState, show, onNewRace, onOpenLeaderboard })
         <h1 className="fw-bold text-dark fs-2 fs-md-1 mb-1">
           {summary.winner_name} WINS!
         </h1>
-        <p className="text-muted fs-6 fs-md-5 mb-3 mb-md-4 fw-bold">Official Race Victory & Results Summary</p>
+        <p className="text-muted fs-6 fs-md-5 mb-2 fw-bold">Official Race Victory & Results Summary</p>
+
+        {/* Auto Countdown Pill */}
+        <div className="mb-3">
+          <Badge bg="success" className="fs-6 px-3 py-2 fw-bold rounded-pill shadow-sm animate-pulse">
+            ⚡ AUTO-STARTING NEW RACE IN {countdown}s...
+          </Badge>
+        </div>
 
         {/* Winner Highlight Card */}
         <Card className="cyber-card p-2 p-md-4 mb-3 mb-md-4 border-warning shadow-sm" style={{ background: '#fef3c7', border: '2px solid #f59e0b' }}>
@@ -141,7 +167,7 @@ export function WinnerOverlay({ raceState, show, onNewRace, onOpenLeaderboard })
               onClick={onNewRace}
               style={{ borderRadius: '14px' }}
             >
-              🔄 NEW RACE
+              🔄 NEW RACE ({countdown}s)
             </Button>
           </Col>
         </Row>
@@ -149,3 +175,4 @@ export function WinnerOverlay({ raceState, show, onNewRace, onOpenLeaderboard })
     </Modal>
   );
 }
+

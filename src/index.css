@@ -231,6 +231,43 @@ body {
   box-shadow: 0 0 0 4px var(--p1-glow) !important;
 }
 
+/* Location Filter Dropdown & Location Badge Styling */
+.location-filter-select {
+  background-color: #f8fafc !important;
+  border: 1.5px solid #cbd5e1 !important;
+  border-radius: 20px !important;
+  font-weight: 700 !important;
+  color: #0f172a !important;
+  font-size: 0.85rem !important;
+  padding: 0.35rem 0.85rem !important;
+  transition: all 0.2s ease !important;
+}
+
+.location-filter-select:focus, .location-filter-select:hover {
+  border-color: #0284c7 !important;
+  box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.15) !important;
+}
+
+.location-pill-loc1 {
+  background-color: #e0f2fe !important;
+  color: #0284c7 !important;
+  border: 1px solid #bae6fd !important;
+  font-weight: 700 !important;
+  border-radius: 12px !important;
+  font-size: 0.75rem !important;
+  padding: 0.2rem 0.55rem !important;
+}
+
+.location-pill-loc2 {
+  background-color: #ffe4e6 !important;
+  color: #e11d48 !important;
+  border: 1px solid #fecdd3 !important;
+  font-weight: 700 !important;
+  border-radius: 12px !important;
+  font-size: 0.75rem !important;
+  padding: 0.2rem 0.55rem !important;
+}
+
 /* Badges & Hotkey Hints */
 .shortcut-badge {
   background: #f1f5f9;

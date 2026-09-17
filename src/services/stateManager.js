@@ -360,11 +360,11 @@ class RaceStateManager {
       runner_up_best_lap: runnerUp.best_lap
     };
 
-    // Save completed race to Leaderboard history in localStorage
-    this.saveRaceToLeaderboard(state);
-
-    const eventMeta = { type: 'END_RACE', timestamp: state.ended_at };
-    this.saveState(state, eventMeta);
+    // Save completed race to Leaderboard history in Supabase
+    this.saveRaceToLeaderboard(state).then(() => {
+      const eventMeta = { type: 'END_RACE', timestamp: state.ended_at };
+      this.saveState(state, eventMeta);
+    });
   }
 
   resetRace() {
@@ -386,15 +386,12 @@ class RaceStateManager {
     return loc;
   }
 
-  saveRaceToLeaderboard(raceState) {
+  async saveRaceToLeaderboard(raceState) {
     try {
       const locationId = this.getLocationId();
-      const stored = localStorage.getItem(this.LEADERBOARD_KEY);
-      let leaderboard = stored ? JSON.parse(stored) : [];
-
       const sessionDurationMs = raceState.ended_at - raceState.started_at;
 
-      ['1', '2'].forEach((id) => {
+      for (const id of ['1', '2']) {
         const p = raceState.players[id];
         if (p && p.name) {
           const pTotalMs = p.lap_times.length > 0
@@ -415,10 +412,8 @@ class RaceStateManager {
             timestamp: raceState.ended_at
           };
 
-          leaderboard.push(recordObj);
-
-          // Save to server/cloud database asynchronously (Supabase + local)
-          saveParticipantToDisk({
+          // Await direct save to Supabase Cloud Database
+          await saveParticipantToDisk({
             ...recordObj,
             id: id,
             name: p.name,
@@ -428,19 +423,7 @@ class RaceStateManager {
             time_str: recordObj.total_time_str
           });
         }
-      });
-
-      // Sort leaderboard:
-      // 1. Most laps (descending)
-      // 2. Less total time (ascending)
-      // 3. Less fastest lap time (ascending)
-      leaderboard.sort((a, b) => {
-        if (b.laps !== a.laps) return b.laps - a.laps;
-        if (a.total_time_ms !== b.total_time_ms) return a.total_time_ms - b.total_time_ms;
-        return a.fastest_lap - b.fastest_lap;
-      });
-
-      localStorage.setItem(this.LEADERBOARD_KEY, JSON.stringify(leaderboard));
+      }
 
       // Post update over BroadcastChannel for multi-screen sync
       if (this.channel) {

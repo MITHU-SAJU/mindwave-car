@@ -5,7 +5,10 @@ import { fetchRaceHistory, clearRaceHistoryOnDisk, updateParticipantRecord, dele
 import { subscribeToSupabaseRealtime } from '../services/supabase';
 
 export function PublicLeaderboardView({ raceState, formattedTime, onSwitchToControl }) {
-  const [filterLocation] = useState('all');
+  // Default to the venue location configured in Settings (e.g., location_1 or location_2)
+  const [filterLocation, setFilterLocation] = useState(() => {
+    return raceStateManager.getLocationId() || 'location_1';
+  });
   const [leaderboard, setLeaderboard] = useState([]);
 
   // Edit Modal State
@@ -15,7 +18,7 @@ export function PublicLeaderboardView({ raceState, formattedTime, onSwitchToCont
   const [editLaps, setEditLaps] = useState(0);
 
   const loadLeaderboardData = async (loc = filterLocation) => {
-    // Fetch directly from Supabase Database
+    // Fetch directly from Supabase Database for requested location filter
     const list = await fetchRaceHistory(loc);
 
     // Sort: Laps (desc), Total time (asc), Fastest lap (asc)
@@ -39,9 +42,21 @@ export function PublicLeaderboardView({ raceState, formattedTime, onSwitchToCont
   useEffect(() => {
     loadLeaderboardData(filterLocation);
 
-    // Subscribe to state manager updates
-    const unsubscribeState = raceStateManager.subscribe(() => {
-      loadLeaderboardData(filterLocation);
+    // Subscribe to state manager updates (including location config changes & END_RACE events)
+    const unsubscribeState = raceStateManager.subscribe((state, eventMeta) => {
+      if (eventMeta && eventMeta.type === 'LOCATION_CHANGED') {
+        const activeLoc = raceStateManager.getLocationId();
+        setFilterLocation(activeLoc);
+        loadLeaderboardData(activeLoc);
+      } else {
+        loadLeaderboardData(filterLocation);
+        // Automatic delayed fetch after race completion to ensure Supabase DB row is rendered without manual reload
+        if (eventMeta && (eventMeta.type === 'END_RACE' || state.status === 'finished')) {
+          setTimeout(() => {
+            loadLeaderboardData(filterLocation);
+          }, 1200);
+        }
+      }
     });
 
     // Subscribe to Supabase Realtime updates
@@ -55,8 +70,16 @@ export function PublicLeaderboardView({ raceState, formattedTime, onSwitchToCont
     };
   }, [raceState, filterLocation]);
 
+
+
+  const handleLocationChange = (newLoc) => {
+    setFilterLocation(newLoc);
+    loadLeaderboardData(newLoc);
+  };
+
   const handleClearHistory = async () => {
-    if (window.confirm('Are you sure you want to clear all leaderboard records from Supabase?')) {
+    const locName = filterLocation === 'all' ? 'all locations' : filterLocation === 'location_1' ? 'Location 1' : 'Location 2';
+    if (window.confirm(`Are you sure you want to clear leaderboard records for ${locName} from Supabase?`)) {
       await clearRaceHistoryOnDisk(filterLocation);
       loadLeaderboardData(filterLocation);
     }
@@ -102,7 +125,7 @@ export function PublicLeaderboardView({ raceState, formattedTime, onSwitchToCont
   return (
     <Container fluid className="p-3 p-md-4 flex-grow-1 d-flex flex-column" style={{ maxHeight: 'calc(100vh - 65px)', overflow: 'hidden' }}>
       {/* Header Banner */}
-      <Card className="cyber-card p-3 mb-3 d-flex flex-row justify-content-between align-items-center shadow-sm">
+      {/* <Card className="cyber-card p-3 mb-3 d-flex flex-row justify-content-between align-items-center shadow-sm">
         <div className="d-flex align-items-center gap-3">
           <span style={{ fontSize: '2rem' }}>🏆</span>
           <div>
@@ -123,7 +146,7 @@ export function PublicLeaderboardView({ raceState, formattedTime, onSwitchToCont
             </Button>
           )}
         </div>
-      </Card>
+      </Card> */}
 
       {/* Winner Banner if Finished */}
       {isFinished && raceState.winner_summary && (
@@ -134,15 +157,31 @@ export function PublicLeaderboardView({ raceState, formattedTime, onSwitchToCont
         </Card>
       )}
 
-      {/* Clean & Spacious Standings Table */}
+      {/* Standings Table Card */}
       <Card className="cyber-card p-3 p-md-4 flex-grow-1 d-flex flex-column overflow-hidden shadow-sm">
-        <div className="d-flex justify-content-between align-items-center mb-3">
+        <div className="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
           <h5 className="fw-bold text-dark mb-0 d-flex align-items-center gap-2 fs-5">
-            <span>🥇</span> DRIVER RANKINGS
+            <span>🥇</span> LEADERBOARD
           </h5>
-          <Button variant="outline-danger" size="sm" className="py-1 px-3 fw-bold" onClick={handleClearHistory}>
-            🗑️ Clear All
-          </Button>
+
+          {/* Small Location Filter Dropdown & Clear All Button */}
+          <div className="d-flex align-items-center gap-2">
+            <Form.Select
+              size="sm"
+              className="location-filter-select shadow-sm"
+              style={{ width: 'auto', minWidth: '160px', cursor: 'pointer' }}
+              value={filterLocation}
+              onChange={(e) => handleLocationChange(e.target.value)}
+            >
+              <option value="all">🌍 All Locations</option>
+              <option value="location_1">🏢 Location 1</option>
+              <option value="location_2">🏬 Location 2</option>
+            </Form.Select>
+
+            <Button variant="outline-danger" size="sm" className="py-1 px-3 fw-bold rounded-pill" onClick={handleClearHistory}>
+              🗑️ Clear All
+            </Button>
+          </div>
         </div>
 
         <div className="table-responsive flex-grow-1 overflow-auto">
@@ -159,45 +198,56 @@ export function PublicLeaderboardView({ raceState, formattedTime, onSwitchToCont
             </thead>
             <tbody>
               {leaderboard && leaderboard.length > 0 ? (
-                leaderboard.map((row, idx) => (
-                  <tr key={row.entry_id || idx} style={{ background: row.is_winner ? '#fffbeb' : 'transparent' }}>
-                    <td className="fw-bold text-warning py-3 px-4 fs-5">
-                      {idx === 0 ? '🥇 #1' : idx === 1 ? '🥈 #2' : idx === 2 ? '🥉 #3' : `#${idx + 1}`}
-                    </td>
-                    <td className="fw-bold text-dark py-3 px-4 fs-5">
-                      {row.player_name || row.name} {row.is_winner && '🏆'}
-                    </td>
-                    <td className="fw-bold text-primary py-3 px-4 fs-5">{row.laps} Laps</td>
-                    <td className="text-dark fw-bold py-3 px-4 fs-5" style={{ fontFamily: 'var(--font-mono)' }}>{row.total_time_str || row.time_str}</td>
-                    <td className="text-warning fw-bold py-3 px-4 fs-5" style={{ fontFamily: 'var(--font-mono)' }}>{row.fastest_lap_str || row.best_lap}</td>
-                    <td className="py-3 px-4 text-center">
-                      <div className="d-flex justify-content-center gap-2">
-                        <Button
-                          variant="outline-info"
-                          size="sm"
-                          className="px-2 py-1"
-                          onClick={() => handleOpenEdit(row)}
-                          title="Edit Record"
-                        >
-                          ✏️ Edit
-                        </Button>
-                        <Button
-                          variant="outline-danger"
-                          size="sm"
-                          className="px-2 py-1"
-                          onClick={() => handleDeleteRow(row)}
-                          title="Delete Record"
-                        >
-                          🗑️ Delete
-                        </Button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
+                leaderboard.map((row, idx) => {
+                  const locId = row.location_id || 'location_1';
+                  const locTag = locId === 'location_1' ? 'Loc 1' : locId === 'location_2' ? 'Loc 2' : locId;
+                  const pillClass = locId === 'location_1' ? 'location-pill-loc1' : 'location-pill-loc2';
+
+                  return (
+                    <tr key={row.entry_id || idx} style={{ background: row.is_winner ? '#fffbeb' : 'transparent' }}>
+                      <td className="fw-bold text-warning py-3 px-4 fs-5">
+                        {idx === 0 ? '🥇 #1' : idx === 1 ? '🥈 #2' : idx === 2 ? '🥉 #3' : `#${idx + 1}`}
+                      </td>
+                      <td className="fw-bold text-dark py-3 px-4 fs-5">
+                        {row.player_name || row.name} {row.is_winner && '🏆'}{' '}
+                        {filterLocation === 'all' && (
+                          <Badge className={`ms-2 align-middle ${pillClass}`}>
+                            {locTag}
+                          </Badge>
+                        )}
+                      </td>
+                      <td className="fw-bold text-primary py-3 px-4 fs-5">{row.laps} Laps</td>
+                      <td className="text-dark fw-bold py-3 px-4 fs-5" style={{ fontFamily: 'var(--font-mono)' }}>{row.total_time_str || row.time_str}</td>
+                      <td className="text-warning fw-bold py-3 px-4 fs-5" style={{ fontFamily: 'var(--font-mono)' }}>{row.fastest_lap_str || row.best_lap}</td>
+                      <td className="py-3 px-4 text-center">
+                        <div className="d-flex justify-content-center gap-2">
+                          <Button
+                            variant="outline-info"
+                            size="sm"
+                            className="px-2 py-1 rounded-pill"
+                            onClick={() => handleOpenEdit(row)}
+                            title="Edit Record"
+                          >
+                            ✏️ Edit
+                          </Button>
+                          <Button
+                            variant="outline-danger"
+                            size="sm"
+                            className="px-2 py-1 rounded-pill"
+                            onClick={() => handleDeleteRow(row)}
+                            title="Delete Record"
+                          >
+                            🗑️ Delete
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
               ) : (
                 <tr>
                   <td colSpan="6" className="text-center py-5 text-muted fw-bold fs-5">
-                    No completed races in Supabase database yet. Start a race in Race Controller!
+                    No completed races found for {filterLocation === 'all' ? 'any location' : filterLocation === 'location_1' ? 'Location 1' : 'Location 2'}. Start a race in Race Controller!
                   </td>
                 </tr>
               )}
@@ -245,6 +295,7 @@ export function PublicLeaderboardView({ raceState, formattedTime, onSwitchToCont
     </Container>
   );
 }
+
 
 
 

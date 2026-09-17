@@ -192,7 +192,7 @@ export function PublicLeaderboardView({ raceState, formattedTime, onSwitchToCont
                 <th className="py-3 px-4 fs-6">Driver Name</th>
                 <th className="py-3 px-4 fs-6">Completed Laps</th>
                 <th className="py-3 px-4 fs-6">Total Race Time</th>
-                <th className="py-3 px-4 fs-6">Fastest Lap</th>
+                {/* <th className="py-3 px-4 fs-6">Fastest Lap</th> */}
                 <th className="py-3 px-4 fs-6 text-center">Actions</th>
               </tr>
             </thead>
@@ -218,7 +218,7 @@ export function PublicLeaderboardView({ raceState, formattedTime, onSwitchToCont
                       </td>
                       <td className="fw-bold text-primary py-3 px-4 fs-5">{row.laps} Laps</td>
                       <td className="text-dark fw-bold py-3 px-4 fs-5" style={{ fontFamily: 'var(--font-mono)' }}>{row.total_time_str || row.time_str}</td>
-                      <td className="text-warning fw-bold py-3 px-4 fs-5" style={{ fontFamily: 'var(--font-mono)' }}>{row.fastest_lap_str || row.best_lap}</td>
+                      {/* <td className="text-warning fw-bold py-3 px-4 fs-5" style={{ fontFamily: 'var(--font-mono)' }}>{row.fastest_lap_str || row.best_lap}</td> */}
                       <td className="py-3 px-4 text-center">
                         <div className="d-flex justify-content-center gap-2">
                           <Button

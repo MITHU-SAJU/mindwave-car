@@ -373,10 +373,22 @@ class RaceStateManager {
     this.saveState(newState, eventMeta);
   }
 
-  // --- LEADERBOARD LOCALSTORAGE PERSISTENCE & SORTING ---
+  // --- LOCATION MANAGEMENT & LEADERBOARD PERSISTENCE ---
+
+  getLocationId() {
+    return localStorage.getItem('mindwave_location_id') || 'location_1';
+  }
+
+  setLocationId(locationId) {
+    const loc = locationId ? String(locationId).trim() : 'location_1';
+    localStorage.setItem('mindwave_location_id', loc);
+    this.notifySubscribers({ type: 'LOCATION_CHANGED', locationId: loc });
+    return loc;
+  }
 
   saveRaceToLeaderboard(raceState) {
     try {
+      const locationId = this.getLocationId();
       const stored = localStorage.getItem(this.LEADERBOARD_KEY);
       let leaderboard = stored ? JSON.parse(stored) : [];
 
@@ -392,6 +404,7 @@ class RaceStateManager {
           const recordObj = {
             entry_id: `${raceState.race_id}_${id}`,
             race_id: raceState.race_id,
+            location_id: locationId,
             player_name: p.name,
             laps: p.laps,
             total_time_ms: pTotalMs,
@@ -404,11 +417,12 @@ class RaceStateManager {
 
           leaderboard.push(recordObj);
 
-          // Save to server disk file asynchronously
+          // Save to server/cloud database asynchronously (Supabase + local)
           saveParticipantToDisk({
             ...recordObj,
             id: id,
             name: p.name,
+            location_id: locationId,
             target_laps: raceState.target_laps,
             status: raceState.winner_id === id ? 'WINNER' : 'RUNNER-UP',
             time_str: recordObj.total_time_str
@@ -444,10 +458,15 @@ class RaceStateManager {
     }
   }
 
-  getLeaderboard() {
+  getLeaderboard(filterLocation = 'all') {
     try {
       const stored = localStorage.getItem(this.LEADERBOARD_KEY);
-      const list = stored ? JSON.parse(stored) : [];
+      let list = stored ? JSON.parse(stored) : [];
+
+      if (filterLocation && filterLocation !== 'all') {
+        list = list.filter(item => (item.location_id || 'location_1') === filterLocation);
+      }
+
       // Ensure sorted order
       return list.sort((a, b) => {
         if (b.laps !== a.laps) return b.laps - a.laps;
@@ -459,10 +478,20 @@ class RaceStateManager {
     }
   }
 
-  clearLeaderboard() {
-    localStorage.removeItem(this.LEADERBOARD_KEY);
-    localStorage.removeItem('mindwave_race_history');
-    clearRaceHistoryOnDisk();
+  clearLeaderboard(locationId = 'all') {
+    clearRaceHistoryOnDisk(locationId);
+
+    if (locationId === 'all') {
+      localStorage.removeItem(this.LEADERBOARD_KEY);
+      localStorage.removeItem('mindwave_race_history');
+    } else {
+      const stored = localStorage.getItem(this.LEADERBOARD_KEY);
+      if (stored) {
+        const filtered = JSON.parse(stored).filter(item => (item.location_id || 'location_1') !== locationId);
+        localStorage.setItem(this.LEADERBOARD_KEY, JSON.stringify(filtered));
+      }
+    }
+
     if (this.channel) {
       try {
         this.channel.postMessage({

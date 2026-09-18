@@ -1,20 +1,37 @@
-import React, { useState, useEffect } from 'react';
-import { Container, Card, Table, Badge, Button, Modal, Form } from 'react-bootstrap';
-import { raceStateManager } from '../services/stateManager';
-import { fetchRaceHistory, clearRaceHistoryOnDisk, updateParticipantRecord, deleteParticipantRecord } from '../services/api';
-import { subscribeToSupabaseRealtime } from '../services/supabase';
+import React, { useState, useEffect } from "react";
+import {
+  Container,
+  Card,
+  Table,
+  Badge,
+  Button,
+  Modal,
+  Form,
+} from "react-bootstrap";
+import { raceStateManager } from "../services/stateManager";
+import {
+  fetchRaceHistory,
+  clearRaceHistoryOnDisk,
+  updateParticipantRecord,
+  deleteParticipantRecord,
+} from "../services/api";
+import { subscribeToSupabaseRealtime } from "../services/supabase";
 
-export function PublicLeaderboardView({ raceState, formattedTime, onSwitchToControl }) {
+export function PublicLeaderboardView({
+  raceState,
+  formattedTime,
+  onSwitchToControl,
+}) {
   // Default to the venue location configured in Settings (e.g., location_1 or location_2)
   const [filterLocation, setFilterLocation] = useState(() => {
-    return raceStateManager.getLocationId() || 'location_1';
+    return raceStateManager.getLocationId() || "location_1";
   });
   const [leaderboard, setLeaderboard] = useState([]);
 
   // Edit Modal State
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingEntry, setEditingEntry] = useState(null);
-  const [editName, setEditName] = useState('');
+  const [editName, setEditName] = useState("");
   const [editLaps, setEditLaps] = useState(0);
 
   const loadLeaderboardData = async (loc = filterLocation) => {
@@ -44,14 +61,17 @@ export function PublicLeaderboardView({ raceState, formattedTime, onSwitchToCont
 
     // Subscribe to state manager updates (including location config changes & END_RACE events)
     const unsubscribeState = raceStateManager.subscribe((state, eventMeta) => {
-      if (eventMeta && eventMeta.type === 'LOCATION_CHANGED') {
+      if (eventMeta && eventMeta.type === "LOCATION_CHANGED") {
         const activeLoc = raceStateManager.getLocationId();
         setFilterLocation(activeLoc);
         loadLeaderboardData(activeLoc);
       } else {
         loadLeaderboardData(filterLocation);
         // Automatic delayed fetch after race completion to ensure Supabase DB row is rendered without manual reload
-        if (eventMeta && (eventMeta.type === 'END_RACE' || state.status === 'finished')) {
+        if (
+          eventMeta &&
+          (eventMeta.type === "END_RACE" || state.status === "finished")
+        ) {
           setTimeout(() => {
             loadLeaderboardData(filterLocation);
           }, 1200);
@@ -70,16 +90,23 @@ export function PublicLeaderboardView({ raceState, formattedTime, onSwitchToCont
     };
   }, [raceState, filterLocation]);
 
-
-
   const handleLocationChange = (newLoc) => {
     setFilterLocation(newLoc);
     loadLeaderboardData(newLoc);
   };
 
   const handleClearHistory = async () => {
-    const locName = filterLocation === 'all' ? 'all locations' : filterLocation === 'location_1' ? 'Location 1' : 'Location 2';
-    if (window.confirm(`Are you sure you want to clear leaderboard records for ${locName} from Supabase?`)) {
+    const locName =
+      filterLocation === "all"
+        ? "all locations"
+        : filterLocation === "location_1"
+          ? "Location 1"
+          : "Location 2";
+    if (
+      window.confirm(
+        `Are you sure you want to clear leaderboard records for ${locName} from Supabase?`,
+      )
+    ) {
       await clearRaceHistoryOnDisk(filterLocation);
       loadLeaderboardData(filterLocation);
     }
@@ -88,7 +115,7 @@ export function PublicLeaderboardView({ raceState, formattedTime, onSwitchToCont
   // Handle Opening Edit Modal
   const handleOpenEdit = (row) => {
     setEditingEntry(row);
-    setEditName(row.player_name || row.name || '');
+    setEditName(row.player_name || row.name || "");
     setEditLaps(parseInt(row.laps, 10) || 0);
     setShowEditModal(true);
   };
@@ -101,7 +128,7 @@ export function PublicLeaderboardView({ raceState, formattedTime, onSwitchToCont
     if (entryId) {
       await updateParticipantRecord(entryId, {
         player_name: editName.trim(),
-        laps: parseInt(editLaps, 10) || 0
+        laps: parseInt(editLaps, 10) || 0,
       });
       loadLeaderboardData(filterLocation);
     }
@@ -111,19 +138,27 @@ export function PublicLeaderboardView({ raceState, formattedTime, onSwitchToCont
   // Handle Deleting a Single Row from Supabase
   const handleDeleteRow = async (row) => {
     const entryId = row.entry_id;
-    const name = row.player_name || row.name || 'Driver';
+    const name = row.player_name || row.name || "Driver";
 
-    if (window.confirm(`Are you sure you want to delete ${name} from the leaderboard database?`)) {
+    if (
+      window.confirm(
+        `Are you sure you want to delete ${name} from the leaderboard database?`,
+      )
+    ) {
       await deleteParticipantRecord(entryId);
       loadLeaderboardData(filterLocation);
     }
   };
 
-  const isRacing = raceState.status === 'racing';
-  const isFinished = raceState.status === 'finished';
+  const isRacing = raceState.status === "racing";
+  const isFinished = raceState.status === "finished";
 
   return (
-    <Container fluid className="p-3 p-md-4 flex-grow-1 d-flex flex-column" style={{ maxHeight: 'calc(100vh - 65px)', overflow: 'hidden' }}>
+    <Container
+      fluid
+      className="p-3 p-md-4 flex-grow-1 d-flex flex-column"
+      style={{ maxHeight: "calc(100vh - 65px)", overflow: "hidden" }}
+    >
       {/* Header Banner */}
       {/* <Card className="cyber-card p-3 mb-3 d-flex flex-row justify-content-between align-items-center shadow-sm">
         <div className="d-flex align-items-center gap-3">
@@ -150,9 +185,20 @@ export function PublicLeaderboardView({ raceState, formattedTime, onSwitchToCont
 
       {/* Winner Banner if Finished */}
       {isFinished && raceState.winner_summary && (
-        <Card className="cyber-card p-3 mb-3 border-warning text-center shadow-sm" style={{ background: '#fef3c7', border: '2px solid #f59e0b' }}>
+        <Card
+          className="cyber-card p-3 mb-3 border-warning text-center shadow-sm"
+          style={{ background: "#fef3c7", border: "2px solid #f59e0b" }}
+        >
           <h4 className="fw-bold text-dark fs-5 mb-0">
-            🏆 LATEST WINNER: {raceState.winner_summary.winner_name}! | Laps: <strong>{raceState.winner_summary.winner_laps}</strong> | Total Time: <strong>{raceState.winner_summary.total_time_str}</strong> | Best Lap: <strong>{raceState.winner_summary.winner_best_lap ? `${raceState.winner_summary.winner_best_lap.toFixed(2)}s` : '--'}</strong>
+            🏆 LATEST WINNER: {raceState.winner_summary.winner_name}! | Laps:{" "}
+            <strong>{raceState.winner_summary.winner_laps}</strong> | Total
+            Time: <strong>{raceState.winner_summary.total_time_str}</strong> |
+            Best Lap:{" "}
+            <strong>
+              {raceState.winner_summary.winner_best_lap
+                ? `${raceState.winner_summary.winner_best_lap.toFixed(2)}s`
+                : "--"}
+            </strong>
           </h4>
         </Card>
       )}
@@ -169,7 +215,7 @@ export function PublicLeaderboardView({ raceState, formattedTime, onSwitchToCont
             <Form.Select
               size="sm"
               className="location-filter-select shadow-sm"
-              style={{ width: 'auto', minWidth: '160px', cursor: 'pointer' }}
+              style={{ width: "auto", minWidth: "160px", cursor: "pointer" }}
               value={filterLocation}
               onChange={(e) => handleLocationChange(e.target.value)}
             >
@@ -178,7 +224,12 @@ export function PublicLeaderboardView({ raceState, formattedTime, onSwitchToCont
               <option value="location_2">🏬 Location 2</option>
             </Form.Select>
 
-            <Button variant="outline-danger" size="sm" className="py-1 px-3 fw-bold rounded-pill" onClick={handleClearHistory}>
+            <Button
+              variant="outline-danger"
+              size="sm"
+              className="py-1 px-3 fw-bold rounded-pill"
+              onClick={handleClearHistory}
+            >
               🗑️ Clear All
             </Button>
           </div>
@@ -191,7 +242,7 @@ export function PublicLeaderboardView({ raceState, formattedTime, onSwitchToCont
                 <th className="py-3 px-4 fs-6">Rank</th>
                 <th className="py-3 px-4 fs-6">Driver Name</th>
                 <th className="py-3 px-4 fs-6">Completed Laps</th>
-                <th className="py-3 px-4 fs-6">Total Race Time</th>
+                {/* <th className="py-3 px-4 fs-6">Total Race Time</th> */}
                 {/* <th className="py-3 px-4 fs-6">Fastest Lap</th> */}
                 <th className="py-3 px-4 fs-6 text-center">Actions</th>
               </tr>
@@ -199,25 +250,46 @@ export function PublicLeaderboardView({ raceState, formattedTime, onSwitchToCont
             <tbody>
               {leaderboard && leaderboard.length > 0 ? (
                 leaderboard.map((row, idx) => {
-                  const locId = row.location_id || 'location_1';
-                  const locTag = locId === 'location_1' ? 'Loc 1' : locId === 'location_2' ? 'Loc 2' : locId;
-                  const pillClass = locId === 'location_1' ? 'location-pill-loc1' : 'location-pill-loc2';
+                  const locId = row.location_id || "location_1";
+                  const locTag =
+                    locId === "location_1"
+                      ? "Loc 1"
+                      : locId === "location_2"
+                        ? "Loc 2"
+                        : locId;
+                  const pillClass =
+                    locId === "location_1"
+                      ? "location-pill-loc1"
+                      : "location-pill-loc2";
 
                   return (
-                    <tr key={row.entry_id || idx} style={{ background: row.is_winner ? '#fffbeb' : 'transparent' }}>
+                    <tr
+                      key={row.entry_id || idx}
+                      style={{
+                        background: row.is_winner ? "#fffbeb" : "transparent",
+                      }}
+                    >
                       <td className="fw-bold text-warning py-3 px-4 fs-5">
-                        {idx === 0 ? '🥇 #1' : idx === 1 ? '🥈 #2' : idx === 2 ? '🥉 #3' : `#${idx + 1}`}
+                        {idx === 0
+                          ? "🥇 #1"
+                          : idx === 1
+                            ? "🥈 #2"
+                            : idx === 2
+                              ? "🥉 #3"
+                              : `#${idx + 1}`}
                       </td>
                       <td className="fw-bold text-dark py-3 px-4 fs-5">
-                        {row.player_name || row.name} {row.is_winner && '🏆'}{' '}
-                        {filterLocation === 'all' && (
+                        {row.player_name || row.name} {row.is_winner && "🏆"}{" "}
+                        {filterLocation === "all" && (
                           <Badge className={`ms-2 align-middle ${pillClass}`}>
                             {locTag}
                           </Badge>
                         )}
                       </td>
-                      <td className="fw-bold text-primary py-3 px-4 fs-5">{row.laps} Laps</td>
-                      <td className="text-dark fw-bold py-3 px-4 fs-5" style={{ fontFamily: 'var(--font-mono)' }}>{row.total_time_str || row.time_str}</td>
+                      <td className="fw-bold text-primary py-3 px-4 fs-5">
+                        {row.laps} Laps
+                      </td>
+                      {/* <td className="text-dark fw-bold py-3 px-4 fs-5" style={{ fontFamily: 'var(--font-mono)' }}>{row.total_time_str || row.time_str}</td> */}
                       {/* <td className="text-warning fw-bold py-3 px-4 fs-5" style={{ fontFamily: 'var(--font-mono)' }}>{row.fastest_lap_str || row.best_lap}</td> */}
                       <td className="py-3 px-4 text-center">
                         <div className="d-flex justify-content-center gap-2">
@@ -246,8 +318,17 @@ export function PublicLeaderboardView({ raceState, formattedTime, onSwitchToCont
                 })
               ) : (
                 <tr>
-                  <td colSpan="6" className="text-center py-5 text-muted fw-bold fs-5">
-                    No completed races found for {filterLocation === 'all' ? 'any location' : filterLocation === 'location_1' ? 'Location 1' : 'Location 2'}. Start a race in Race Controller!
+                  <td
+                    colSpan="6"
+                    className="text-center py-5 text-muted fw-bold fs-5"
+                  >
+                    No completed races found for{" "}
+                    {filterLocation === "all"
+                      ? "any location"
+                      : filterLocation === "location_1"
+                        ? "Location 1"
+                        : "Location 2"}
+                    . Start a race in Race Controller!
                   </td>
                 </tr>
               )}
@@ -257,9 +338,16 @@ export function PublicLeaderboardView({ raceState, formattedTime, onSwitchToCont
       </Card>
 
       {/* Edit Driver Record Modal */}
-      <Modal show={showEditModal} onHide={() => setShowEditModal(false)} centered contentClassName="modal-content-cyber">
+      <Modal
+        show={showEditModal}
+        onHide={() => setShowEditModal(false)}
+        centered
+        contentClassName="modal-content-cyber"
+      >
         <Modal.Header closeButton closeVariant="white">
-          <Modal.Title className="fw-bold text-white">✏️ Edit Driver Record</Modal.Title>
+          <Modal.Title className="fw-bold text-white">
+            ✏️ Edit Driver Record
+          </Modal.Title>
         </Modal.Header>
         <Modal.Body>
           <Form.Group className="mb-3">
@@ -273,7 +361,9 @@ export function PublicLeaderboardView({ raceState, formattedTime, onSwitchToCont
           </Form.Group>
 
           <Form.Group className="mb-3">
-            <Form.Label className="text-warning fw-bold">Completed Laps</Form.Label>
+            <Form.Label className="text-warning fw-bold">
+              Completed Laps
+            </Form.Label>
             <Form.Control
               type="number"
               min="0"
@@ -284,7 +374,10 @@ export function PublicLeaderboardView({ raceState, formattedTime, onSwitchToCont
           </Form.Group>
         </Modal.Body>
         <Modal.Footer>
-          <Button variant="outline-secondary" onClick={() => setShowEditModal(false)}>
+          <Button
+            variant="outline-secondary"
+            onClick={() => setShowEditModal(false)}
+          >
             Cancel
           </Button>
           <Button variant="info" onClick={handleSaveEdit} className="fw-bold">
@@ -295,7 +388,3 @@ export function PublicLeaderboardView({ raceState, formattedTime, onSwitchToCont
     </Container>
   );
 }
-
-
-
-
